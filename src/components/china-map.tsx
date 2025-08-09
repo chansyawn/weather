@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 
 type ChinaMapProps = {
-  onSelect: (longitude: number, latitude: number) => void;
+  onSelect: (position: [number, number]) => void;
 };
 
 export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
@@ -66,7 +66,7 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
 
             if (pointInGeo) {
               const [longitude, latitude] = pointInGeo;
-              onSelect(longitude, latitude);
+              onSelect([longitude, latitude]);
             }
           }
         });
