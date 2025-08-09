@@ -22,9 +22,7 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
       try {
         // 使用 ECharts 内置的中国地图数据
         // 这里我们使用一个公开的中国地图 GeoJSON 数据
-        const response = await fetch(
-          "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
-        );
+        const response = await fetch("/geo.json");
         const geoJson = await response.json();
 
         // 注册地图
