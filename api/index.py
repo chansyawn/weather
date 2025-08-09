@@ -46,10 +46,9 @@ def get_dataset_info():
 def load_weather_data():
     """加载气象数据文件（使用上下文管理器和分块加载）"""
     try:
-        # 使用分块加载以减少内存使用，并设置较小的块大小
+        # 移除chunks参数以避免dask依赖问题
         ds = xr.open_dataset(
             DATA_FILE_PATH, 
-            chunks={'time': 500, 'latitude': 50, 'longitude': 50},
             engine='netcdf4',
             decode_times=True,
             decode_coords=True
