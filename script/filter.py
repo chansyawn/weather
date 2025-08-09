@@ -26,6 +26,20 @@ def filter_nc_file(path: str) -> None:
 
         subset = ds[keep_vars]
 
+        # Reduce coordinate point density to 1/100 by sampling every 10th point
+        # in both latitude and longitude dimensions
+        if 'latitude' in subset.dims and 'longitude' in subset.dims:
+            # Get the size of latitude and longitude dimensions
+            lat_size = len(subset.latitude)
+            lon_size = len(subset.longitude)
+            
+            # Sample every 10th point (reducing density to 1/100)
+            lat_indices = slice(0, lat_size, 10)
+            lon_indices = slice(0, lon_size, 10)
+            
+            subset = subset.isel(latitude=lat_indices, longitude=lon_indices)
+            print(f"[info] Reduced coordinate density: lat {lat_size}->{len(subset.latitude)}, lon {lon_size}->{len(subset.longitude)}")
+
         # Write to a temporary file first for safety, then move to a new file (no in-place overwrite)
         dir_name = os.path.dirname(path)
         base_name = os.path.basename(path)
