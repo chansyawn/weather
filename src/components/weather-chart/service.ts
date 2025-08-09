@@ -23,8 +23,10 @@ export const useWeatherData = ({ type, position, date }: WeatherDataProps) => {
   const { data, error, isLoading } = useSWR<WeatherResponse>(
     date?.from !== undefined && date?.to !== undefined
       ? `/api/weather?start_time=${date.from.getTime() / 1000}&end_time=${
-          date.to.getTime() / 1000
-        }&lat=${position[1].toFixed(2)}&lon=${position[0].toFixed(2)}&type=${type}`
+          24 * 60 * 60 + date.to.getTime() / 1000
+        }&lat=${position[1].toFixed(2)}&lon=${position[0].toFixed(
+          2
+        )}&type=${type}`
       : null,
     fetcher
   );
