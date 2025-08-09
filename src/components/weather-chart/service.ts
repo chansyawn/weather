@@ -12,7 +12,7 @@ const fetcher = (...args: Parameters<typeof fetch>) =>
 
 export type WeatherData = {
   timestamp: number;
-  value: number;
+  value: string | null;
 }[];
 
 type WeatherResponse = {

@@ -4,9 +4,10 @@ import * as echarts from "echarts";
 
 type WeatherChartContentProps = {
   data: WeatherData;
+  type?: "temperature" | "wind_speed" | "precipitation";
 };
 
-export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
+export const WeatherChartContent = ({ data, type = "temperature" }: WeatherChartContentProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -18,7 +19,26 @@ export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
     const times = data.map((item) =>
       new Date(item.timestamp * 1000).toLocaleDateString()
     );
-    const temperatures = data.map((item) => item.value);
+    
+    // Parse values based on data type
+    const values = data.map((item) => {
+      if (item.value === null) return null;
+      
+      if (type === "wind_speed") {
+        // For wind_speed, parse the comma-separated vector values
+        const [u10, v10] = item.value.split(',').map(v => parseFloat(v));
+        if (isNaN(u10) || isNaN(v10)) return null;
+        // Calculate wind speed magnitude for display
+        return Math.sqrt(u10 * u10 + v10 * v10);
+      } else {
+        // For temperature and precipitation, parse as float
+        const numValue = parseFloat(item.value);
+        return isNaN(numValue) ? null : numValue;
+      }
+    });
+
+    // Filter out null values
+    const validData = values.map((value, index) => ({ value, time: times[index] })).filter(item => item.value !== null);
 
     const option = {
       grid: {
@@ -30,18 +50,18 @@ export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
       },
       xAxis: {
         type: "category",
-        data: times,
+        data: validData.map(item => item.time),
       },
       yAxis: {
         type: "value",
-        name: "温度 (°C)",
+        name: type === "temperature" ? "温度 (°C)" : type === "wind_speed" ? "风速 (m/s)" : "降水量 (mm)",
         axisLabel: {
-          formatter: "{value}°C",
+          formatter: type === "temperature" ? "{value}°C" : type === "wind_speed" ? "{value} m/s" : "{value} mm",
         },
       },
       series: [
         {
-          data: temperatures,
+          data: validData.map(item => item.value),
           type: "line",
           smooth: true,
         },
@@ -50,7 +70,9 @@ export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
         trigger: "axis",
         formatter: (params: any) => {
           const point = params[0];
-          return `${point.name}<br/>温度: ${point.value}°C`;
+          const unit = type === "temperature" ? "°C" : type === "wind_speed" ? " m/s" : " mm";
+          const label = type === "temperature" ? "温度" : type === "wind_speed" ? "风速" : "降水量";
+          return `${point.name}<br/>${label}: ${point.value}${unit}`;
         },
       },
     };
@@ -60,7 +82,7 @@ export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
     return () => {
       chartInstance.current?.dispose();
     };
-  }, [data]);
+  }, [data, type]);
 
   return <div ref={chartRef} className="w-full h-full" />;
 };

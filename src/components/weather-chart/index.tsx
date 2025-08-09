@@ -18,5 +18,5 @@ export const WeatherChart = ({ type, position, date }: WeatherChartProps) => {
   if (error) return <div>Error: {error.message}</div>;
   if (isLoading) return <div>Loading...</div>;
 
-  return <WeatherChartContent data={data!} />;
+  return <WeatherChartContent data={data!} type={type} />;
 };

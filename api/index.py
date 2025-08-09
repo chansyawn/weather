@@ -127,12 +127,14 @@ def extract_data_for_point(ds, lat, lon, data_type):
                 if data_type == 'temperature':
                     if 't2m' in ds.data_vars:
                         try:
-                            value = float(time_data.t2m.values)
+                            temp_value = float(time_data.t2m.values)
                             # 转换为摄氏度 (从开尔文)
-                            value = value - 273.15
+                            temp_value = temp_value - 273.15
                             # 检查是否为有效值
-                            if np.isnan(value) or np.isinf(value):
+                            if np.isnan(temp_value) or np.isinf(temp_value):
                                 value = None
+                            else:
+                                value = str(temp_value)
                         except:
                             value = None
                 elif data_type == 'wind_speed':
@@ -140,19 +142,23 @@ def extract_data_for_point(ds, lat, lon, data_type):
                         try:
                             u10_val = float(time_data.u10.values)
                             v10_val = float(time_data.v10.values)
-                            value = float(calculate_wind_speed(u10_val, v10_val))
                             # 检查是否为有效值
-                            if np.isnan(value) or np.isinf(value):
+                            if np.isnan(u10_val) or np.isinf(u10_val) or np.isnan(v10_val) or np.isinf(v10_val):
                                 value = None
+                            else:
+                                # 返回矢量值，用逗号分割
+                                value = f"{u10_val},{v10_val}"
                         except:
                             value = None
                 elif data_type == 'precipitation':
                     if 'tp6h' in ds.data_vars:
                         try:
-                            value = float(time_data.tp6h.values)
+                            precip_value = float(time_data.tp6h.values)
                             # 检查是否为有效值
-                            if np.isnan(value) or np.isinf(value):
+                            if np.isnan(precip_value) or np.isinf(precip_value):
                                 value = None
+                            else:
+                                value = str(precip_value)
                         except:
                             value = None
                 
