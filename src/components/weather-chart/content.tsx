@@ -2,16 +2,16 @@ import { WeatherData } from "./service";
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 
-type TemperatureChartProps = {
+type WeatherChartContentProps = {
   data: WeatherData;
 };
 
-export const TemperatureChart = ({ data }: TemperatureChartProps) => {
+export const WeatherChartContent = ({ data }: WeatherChartContentProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
   useEffect(() => {
-    if (!chartRef.current || !data.length) return;
+    if (!chartRef.current || !data?.length) return;
 
     chartInstance.current = echarts.init(chartRef.current);
 
@@ -21,6 +21,13 @@ export const TemperatureChart = ({ data }: TemperatureChartProps) => {
     const temperatures = data.map((item) => item.value);
 
     const option = {
+      grid: {
+        left: "3%",
+        right: "4%",
+        top: "3%",
+        bottom: "3%",
+        containLabel: true,
+      },
       xAxis: {
         type: "category",
         data: times,
@@ -55,5 +62,5 @@ export const TemperatureChart = ({ data }: TemperatureChartProps) => {
     };
   }, [data]);
 
-  return <div ref={chartRef} className="w-full h-[500px]" />;
+  return <div ref={chartRef} className="w-full h-full" />;
 };

@@ -1,6 +1,6 @@
 import { DateRange } from "react-day-picker";
 import { useWeatherData } from "./service";
-import { TemperatureChart } from "./temperature";
+import { WeatherChartContent } from "./content";
 
 type WeatherChartProps = {
   type: "temperature" | "wind_speed" | "precipitation";
@@ -18,9 +18,5 @@ export const WeatherChart = ({ type, position, date }: WeatherChartProps) => {
   if (error) return <div>Error: {error.message}</div>;
   if (isLoading) return <div>Loading...</div>;
 
-  if (type === "temperature") {
-    return <TemperatureChart data={data!} />;
-  }
-
-  return null;
+  return <WeatherChartContent data={data!} />;
 };
