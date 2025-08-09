@@ -12,12 +12,12 @@ import { WeatherChart } from "./weather-chart";
 import CarouselContainer from "./carousel-container";
 
 type WeatherPopupProps = {
-  position: [number, number] | undefined;
+  selected: { position: [number, number]; name: string } | undefined;
   onClose: () => void;
 };
 
 export const WeatherPopup: React.FC<WeatherPopupProps> = ({
-  position,
+  selected,
   onClose,
 }) => {
   const [date, setDate] = useState<DateRange | undefined>({
@@ -25,7 +25,7 @@ export const WeatherPopup: React.FC<WeatherPopupProps> = ({
     to: new Date(2025, 5, 11),
   });
 
-  if (!position) return null;
+  if (!selected) return null;
 
   return (
     <Dialog
@@ -36,9 +36,10 @@ export const WeatherPopup: React.FC<WeatherPopupProps> = ({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>天气</DialogTitle>
+          <DialogTitle>{selected.name}</DialogTitle>
           <DialogDescription>
-            经度：{position[0].toFixed(2)}，纬度：{position[1].toFixed(2)}
+            经度：{selected.position[0].toFixed(2)} 纬度：
+            {selected.position[1].toFixed(2)}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2 w-full overflow-hidden items-center py-1">
@@ -51,7 +52,7 @@ export const WeatherPopup: React.FC<WeatherPopupProps> = ({
                   component: (
                     <WeatherChart
                       type="temperature"
-                      position={position}
+                      position={selected.position}
                       date={date}
                     />
                   ),
@@ -61,7 +62,7 @@ export const WeatherPopup: React.FC<WeatherPopupProps> = ({
                   component: (
                     <WeatherChart
                       type="wind_speed"
-                      position={position}
+                      position={selected.position}
                       date={date}
                     />
                   ),
@@ -71,11 +72,11 @@ export const WeatherPopup: React.FC<WeatherPopupProps> = ({
                   component: (
                     <WeatherChart
                       type="precipitation"
-                      position={position}
+                      position={selected.position}
                       date={date}
                     />
                   ),
-                  title: "降水量",
+                  title: "6h累计降水量",
                 },
               ]}
             ></CarouselContainer>

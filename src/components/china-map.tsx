@@ -1,18 +1,41 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 
 type ChinaMapProps = {
-  onSelect: (position: [number, number]) => void;
+  onSelect: (position: { position: [number, number]; name: string }) => void;
 };
 
 export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
+  const [mousePosition, setMousePosition] = useState<{
+    x: number;
+    y: number;
+    lon?: number;
+    lat?: number;
+  } | null>(null);
+  const [containerSize, setContainerSize] = useState<{
+    width: number;
+    height: number;
+  }>({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!chartRef.current) return;
+
+    // 更新容器尺寸
+    const updateContainerSize = () => {
+      if (chartRef.current) {
+        setContainerSize({
+          width: chartRef.current.clientWidth,
+          height: chartRef.current.clientHeight,
+        });
+      }
+    };
+
+    updateContainerSize();
+    window.addEventListener("resize", updateContainerSize);
 
     // 初始化 ECharts 实例
     chartInstance.current = echarts.init(chartRef.current);
@@ -26,22 +49,29 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
         const geoJson = await response.json();
 
         // 注册地图
-        echarts.registerMap("china", geoJson);
+        echarts.registerMap("china_map", geoJson);
 
         // 配置选项
         const option: echarts.EChartsOption = {
+          tooltip: {
+            trigger: "item",
+            formatter: function (params: any) {
+              return params.name || "";
+            },
+            borderColor: "#009588",
+          },
           series: [
             {
               name: "中国地图",
               type: "map",
-              map: "china",
+              map: "china_map",
               roam: true,
               emphasis: {
                 label: {
                   show: false,
                 },
                 itemStyle: {
-                  areaColor: "#009588",
+                  areaColor: "#00958833",
                 },
               },
               select: {
@@ -69,14 +99,46 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
 
             if (pointInGeo) {
               const [longitude, latitude] = pointInGeo;
-              onSelect([longitude, latitude]);
+              onSelect({ position: [longitude, latitude], name: params.name });
             }
           }
+        });
+
+        // 添加鼠标移动事件监听器
+        chartInstance.current?.on("mousemove", function (params: any) {
+          if (params.event && params.event.offsetX && params.event.offsetY) {
+            const pointInPixel = [params.event.offsetX, params.event.offsetY];
+            const pointInGeo = chartInstance.current?.convertFromPixel(
+              { seriesIndex: 0 },
+              pointInPixel
+            );
+
+            if (pointInGeo) {
+              const [longitude, latitude] = pointInGeo;
+              setMousePosition({
+                x: params.event.offsetX,
+                y: params.event.offsetY,
+                lon: longitude,
+                lat: latitude,
+              });
+            } else {
+              setMousePosition({
+                x: params.event.offsetX,
+                y: params.event.offsetY,
+              });
+            }
+          }
+        });
+
+        // 添加鼠标离开事件监听器
+        chartInstance.current?.on("globalout", function () {
+          setMousePosition(null);
         });
 
         // 监听窗口大小变化
         const handleResize = () => {
           chartInstance.current?.resize();
+          updateContainerSize();
         };
         window.addEventListener("resize", handleResize);
 
@@ -93,8 +155,49 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
     // 清理函数
     return () => {
       chartInstance.current?.dispose();
+      window.removeEventListener("resize", updateContainerSize);
     };
   }, []);
 
-  return <div ref={chartRef} className="w-full h-full" />;
+  return (
+    <div ref={chartRef} className="w-full h-full relative">
+      {/* 十字线 */}
+      {mousePosition && (
+        <>
+          {/* 垂直线 */}
+          <div
+            className="absolute top-0 bottom-0 w-px bg-primary opacity-60 pointer-events-none z-10"
+            style={{ left: mousePosition.x }}
+          />
+          {/* 水平线 */}
+          <div
+            className="absolute left-0 right-0 h-px bg-primary opacity-60 pointer-events-none z-10"
+            style={{ top: mousePosition.y }}
+          />
+        </>
+      )}
+
+      {/* 坐标显示 */}
+      {mousePosition &&
+        mousePosition.lon !== undefined &&
+        mousePosition.lat !== undefined && (
+          <div
+            className="absolute bg-black/80 text-white px-2 py-1 rounded text-xs pointer-events-none z-20"
+            style={{
+              left: Math.min(
+                Math.max(mousePosition.x + 10, 10),
+                containerSize.width - 100
+              ),
+              top: Math.max(
+                Math.min(mousePosition.y - 50, containerSize.height - 40),
+                10
+              ),
+            }}
+          >
+            经度: {mousePosition.lon.toFixed(2)}°<br />
+            纬度: {mousePosition.lat.toFixed(2)}°
+          </div>
+        )}
+    </div>
+  );
 };

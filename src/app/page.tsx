@@ -4,16 +4,16 @@ import { WeatherPopup } from "@/components/weather-popup";
 import { useState } from "react";
 
 export default function Home() {
-  const [selectedPoint, setSelectedPoint] = useState<
-    [number, number] | undefined
+  const [selected, setSelected] = useState<
+    { position: [number, number]; name: string } | undefined
   >(undefined);
 
   return (
     <div className="h-screen w-screen">
-      <ChinaMap onSelect={setSelectedPoint} />
+      <ChinaMap onSelect={setSelected} />
       <WeatherPopup
-        position={selectedPoint}
-        onClose={() => setSelectedPoint(undefined)}
+        selected={selected}
+        onClose={() => setSelected(undefined)}
       />
     </div>
   );
