@@ -29,19 +29,24 @@ export const ChinaMap: React.FC<ChinaMapProps> = ({ onSelect }) => {
         echarts.registerMap("china", geoJson);
 
         // 配置选项
-        const option = {
-          tooltip: {
-            trigger: "item",
-            formatter: function (params: any) {
-              return `${params.name}<br/>点击获取经纬度`;
-            },
-          },
+        const option: echarts.EChartsOption = {
           series: [
             {
               name: "中国地图",
               type: "map",
               map: "china",
               roam: true,
+              emphasis: {
+                label: {
+                  show: false,
+                },
+                itemStyle: {
+                  areaColor: "#009588",
+                },
+              },
+              select: {
+                disabled: true,
+              },
             },
           ],
         };

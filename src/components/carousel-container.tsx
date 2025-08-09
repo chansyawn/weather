@@ -32,6 +32,19 @@ const CarouselContainer: React.FC<CarouselContainerProps> = ({
     }, 5000);
   }, [items]);
 
+  const pauseCarousel = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const resumeCarousel = useCallback(() => {
+    if (!intervalRef.current) {
+      resetCarousel();
+    }
+  }, [resetCarousel]);
+
   useEffect(() => {
     resetCarousel();
     return () => {
@@ -39,7 +52,7 @@ const CarouselContainer: React.FC<CarouselContainerProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [resetCarousel]);
 
   const handleMoveLeft = () => {
     setCurrentIndex((prevIndex) =>
@@ -60,6 +73,14 @@ const CarouselContainer: React.FC<CarouselContainerProps> = ({
     resetCarousel();
   };
 
+  const handleMouseEnter = () => {
+    pauseCarousel();
+  };
+
+  const handleMouseLeave = () => {
+    resumeCarousel();
+  };
+
   if (!items || items.length === 0) {
     return null;
   }
@@ -71,7 +92,11 @@ const CarouselContainer: React.FC<CarouselContainerProps> = ({
         className
       )}
     >
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden gap-1 flex-1">
+      <div
+        className="relative w-full h-full flex items-center justify-center overflow-hidden gap-1 flex-1"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <div className="overflow-hidden flex-1 h-full">
           <div
             className="flex transition-transform duration-300 ease-in-out h-full"

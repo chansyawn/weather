@@ -7,7 +7,37 @@ type WeatherChartContentProps = {
   type?: "temperature" | "wind_speed" | "precipitation";
 };
 
-export const WeatherChartContent = ({ data, type = "temperature" }: WeatherChartContentProps) => {
+const UNIT: Record<string, string> = {
+  temperature: "°C",
+  wind_speed: "m/s",
+  precipitation: "mm",
+};
+
+const UNIT_LABEL: Record<string, string> = {
+  temperature: "温度",
+  wind_speed: "风速",
+  precipitation: "降水量",
+};
+
+// Calculate wind direction from u10 and v10 components
+const calculateWindDirection = (u10: number, v10: number): number => {
+  // Convert to degrees and adjust for meteorological convention
+  let direction = Math.atan2(v10, u10) * (180 / Math.PI);
+  direction = (90 - direction + 360) % 360;
+  return direction;
+};
+
+// Navigation2 icon as SVG string
+const getNavigation2Icon = (rotation: number) => {
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; transform: rotate(${rotation}deg); vertical-align: middle;">
+    <polygon points="12 2 19 21 12 17 5 21 12 2"/>
+  </svg>`;
+};
+
+export const WeatherChartContent = ({
+  data,
+  type = "temperature",
+}: WeatherChartContentProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -19,28 +49,43 @@ export const WeatherChartContent = ({ data, type = "temperature" }: WeatherChart
     const times = data.map((item) =>
       new Date(item.timestamp * 1000).toLocaleDateString()
     );
-    
+
+    const unit = UNIT[type];
+    const unitLabel = UNIT_LABEL[type];
+
     // Parse values based on data type
     const values = data.map((item) => {
       if (item.value === null) return null;
-      
+
       if (type === "wind_speed") {
-        // For wind_speed, parse the comma-separated vector values
-        const [u10, v10] = item.value.split(',').map(v => parseFloat(v));
+        const [u10, v10] = item.value.split(",").map((v) => parseFloat(v));
         if (isNaN(u10) || isNaN(v10)) return null;
-        // Calculate wind speed magnitude for display
         return Math.sqrt(u10 * u10 + v10 * v10);
       } else {
-        // For temperature and precipitation, parse as float
         const numValue = parseFloat(item.value);
         return isNaN(numValue) ? null : numValue;
       }
     });
 
-    // Filter out null values
-    const validData = values.map((value, index) => ({ value, time: times[index] })).filter(item => item.value !== null);
+    // Calculate wind directions for wind_speed type
+    const windDirections = type === "wind_speed" 
+      ? data.map((item) => {
+          if (item.value === null) return null;
+          const [u10, v10] = item.value.split(",").map((v) => parseFloat(v));
+          if (isNaN(u10) || isNaN(v10)) return null;
+          return calculateWindDirection(u10, v10);
+        })
+      : null;
 
-    const option = {
+    const validData = values
+      .map((value, index) => ({ 
+        value, 
+        time: times[index],
+        windDirection: windDirections ? windDirections[index] : null
+      }))
+      .filter((item) => item.value !== null);
+
+    const option: echarts.EChartsOption = {
       grid: {
         left: "3%",
         right: "4%",
@@ -50,29 +95,68 @@ export const WeatherChartContent = ({ data, type = "temperature" }: WeatherChart
       },
       xAxis: {
         type: "category",
-        data: validData.map(item => item.time),
+        data: validData.map((item) => item.time),
+        axisLabel: {
+          color: "#737373",
+        },
+        axisLine: {
+          lineStyle: {
+            color: "#009588",
+            type: type === "temperature" ? "dashed" : "solid",
+          },
+        },
       },
       yAxis: {
         type: "value",
-        name: type === "temperature" ? "温度 (°C)" : type === "wind_speed" ? "风速 (m/s)" : "降水量 (mm)",
+        name: `${unitLabel}(${unit})`,
         axisLabel: {
-          formatter: type === "temperature" ? "{value}°C" : type === "wind_speed" ? "{value} m/s" : "{value} mm",
+          formatter: (value: number) => `${value}${unit}`,
+          color: "#737373",
+        },
+        nameTextStyle: {
+          color: "#737373",
         },
       },
       series: [
         {
-          data: validData.map(item => item.value),
-          type: "line",
-          smooth: true,
+          data: validData.map((item) => ({
+            value: item.value,
+            unit: unit,
+            windDirection: item.windDirection,
+          })),
+          type: type === "precipitation" ? "bar" : "line",
+          smooth: type !== "precipitation",
+          lineStyle:
+            type !== "precipitation"
+              ? {
+                  color: "#009588",
+                }
+              : undefined,
+          itemStyle:
+            type === "precipitation"
+              ? {
+                  color: "#009588",
+                }
+              : {
+                  color: "#009588",
+                },
+          symbol: type !== "precipitation" ? "circle" : undefined,
+          symbolSize: type !== "precipitation" ? 6 : undefined,
         },
       ],
       tooltip: {
         trigger: "axis",
         formatter: (params: any) => {
           const point = params[0];
-          const unit = type === "temperature" ? "°C" : type === "wind_speed" ? " m/s" : " mm";
-          const label = type === "temperature" ? "温度" : type === "wind_speed" ? "风速" : "降水量";
-          return `${point.name}<br/>${label}: ${point.value}${unit}`;
+          let tooltipContent = `${point.name}<br/>${unitLabel}: ${point.value}${unit}`;
+          
+          if (type === "wind_speed" && point.data.windDirection !== null) {
+            const direction = point.data.windDirection;
+            const iconSvg = getNavigation2Icon(direction);
+            tooltipContent += `<br/>风向: ${iconSvg} ${direction.toFixed(1)}°`;
+          }
+          
+          return tooltipContent;
         },
       },
     };
