@@ -4,7 +4,7 @@ import xarray as xr
 from datetime import datetime
 
 # 数据文件路径
-DATA_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'public', 'weather_data.nc')
+DATA_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'weather_data.nc')
 
 def load_weather_data():
     """加载气象数据文件"""
