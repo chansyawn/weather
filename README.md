@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Weather
 
-## Getting Started
+地址：https://weather-green-zeta.vercel.app/
 
-First, run the development server:
+## 介绍
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+工程主要分为三部分
+
+### 数据处理
+
+`script/decompression.py` 用于解压原始文件
+
+`script/filter.py` 由于 Vercel 部署有静态文件大小限制（需要小于 100 MB），使用该脚本降低数据量，主要是提取了所需的字段（t2m/u10/v10/tp6h），并且对经纬度进行降采样，最终结果为根目录下的 `weather_data.nc`
+
+### 服务端
+
+使用了 Vercel 提供的 Python Serverless 服务，实现了一个接口 `/api/weather`，根据时间和坐标从 `weather_data.nc` 提取数据，出入参如下所示
+
+```typescript
+type Request = {
+    start_time: number; // 开始时间戳
+    end_time: number; // 结束时间戳
+    lat: number; // 纬度
+    lon: number; // 经度
+    type: "temperature" | "wind_speed" | "precipitation" // 数据类型
+}
+
+type Response = {
+    data: [
+        timestamp: number; // 时间戳每
+        value: string; // 值（风速的值为向量，用于计算风向）
+    ]{}
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 前端
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+基于 `Next.js` 构建，使用 `shadcn` 作为基础 ui 库，通过 `echart` 实现图表的绘制，主要组件如下
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. 轮播容器 `src/components/carousel-container.tsx`
+2. 地图（经纬度选择）`src/components/china-map.tsx`
+3. 图表渲染 `src/components/weather-char/content.tsx`
 
-## Learn More
+## 部署方式
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+使用 Vercel 链接仓库即可一键部署
